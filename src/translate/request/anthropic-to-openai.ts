@@ -46,10 +46,18 @@ export function formatAnthropicToOpenAI(body: any): any {
 
           const trimmed = text.trim();
           const trimmedReasoning = reasoningContent.trim();
+          
           if (trimmed) assistantMsg.content = trimmed;
-          if (trimmedReasoning) assistantMsg.reasoning_content = trimmedReasoning;
+          if (trimmedReasoning) {
+            assistantMsg.reasoning_content = trimmedReasoning;
+          } else if (toolCalls.length > 0) {
+            // Moonshot AI requires reasoning_content to be present if tool calls are made
+            // by a thinking model, even if it's empty.
+            assistantMsg.reasoning_content = "";
+          }
+
           if (toolCalls.length > 0) assistantMsg.tool_calls = toolCalls;
-          if (assistantMsg.content || assistantMsg.reasoning_content || assistantMsg.tool_calls) result.push(assistantMsg);
+          if (assistantMsg.content !== null || assistantMsg.reasoning_content !== undefined || assistantMsg.tool_calls) result.push(assistantMsg);
         }
 
         if (msg.role === "user") {
@@ -116,8 +124,6 @@ export function formatAnthropicToOpenAI(body: any): any {
   }
 
   // Inject prompt_cache_key from system prompt hash for OpenAI node affinity caching.
-  // This ensures requests with the same system prompt are routed to the same backend
-  // node, enabling automatic OpenAI-style prefix caching.
   const cacheKey = hashSystemPrompt(system);
   if (cacheKey) {
     data.prompt_cache_key = cacheKey;
