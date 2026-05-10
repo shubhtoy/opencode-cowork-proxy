@@ -52,8 +52,8 @@ export function formatAnthropicToOpenAI(body: any): any {
             assistantMsg.reasoning_content = trimmedReasoning;
           } else if (toolCalls.length > 0) {
             // Moonshot AI requires reasoning_content to be present if tool calls are made
-            // by a thinking model, even if it's empty.
-            assistantMsg.reasoning_content = "";
+            // by a thinking model. It rejects an empty string (""), but accepts a single space.
+            assistantMsg.reasoning_content = " ";
           }
 
           if (toolCalls.length > 0) assistantMsg.tool_calls = toolCalls;
