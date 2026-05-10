@@ -76,6 +76,11 @@ async function handleRequest(request: Request): Promise<Response> {
       if (fmt === "openai") {
         const req = await request.json();
         if (hasImages(req)) req.model = VISION_MODEL;
+        
+        // Custom header override takes highest precedence
+        const overrideModel = request.headers.get("X-Override-Model");
+        if (overrideModel) req.model = overrideModel;
+
         const openaiReq = formatAnthropicToOpenAI(req);
         const res = await fetch(`${upstream}/chat/completions`, {
           method: "POST",
@@ -99,10 +104,14 @@ async function handleRequest(request: Request): Promise<Response> {
       }
 
       // Pass-through to Anthropic upstream
+      const req = await request.json();
+      const overrideModel = request.headers.get("X-Override-Model");
+      if (overrideModel) req.model = overrideModel;
+
       const res = await fetch(`${upstream}/v1/messages`, {
         method: "POST",
         headers: anthropicHeaders(request, key!),
-        body: await request.text(),
+        body: JSON.stringify(req),
       });
       return res;
   }
@@ -115,6 +124,11 @@ async function handleRequest(request: Request): Promise<Response> {
 
       if (fmt === "anthropic") {
         const req = await request.json();
+        
+        // Custom header override takes highest precedence
+        const overrideModel = request.headers.get("X-Override-Model");
+        if (overrideModel) req.model = overrideModel;
+
         const anthReq = formatOpenAIToAnthropic(req);
         const res = await fetch(`${upstream}/v1/messages`, {
           method: "POST",
@@ -135,10 +149,14 @@ async function handleRequest(request: Request): Promise<Response> {
       }
 
       // Pass-through to OpenAI upstream
+      const req = await request.json();
+      const overrideModel = request.headers.get("X-Override-Model");
+      if (overrideModel) req.model = overrideModel;
+
       const res = await fetch(`${upstream}/chat/completions`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${key}` },
-        body: await request.text(),
+        body: JSON.stringify(req),
       });
       return res;
   }
